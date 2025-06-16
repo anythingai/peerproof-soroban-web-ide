@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soroban IDE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .ide-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: #252526;
+            border-right: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            height: 50px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-right: 1px solid #3e3e42;
+            background: #2d2d30;
+        }
+        
+        .tab.active {
+            background: #1e1e1e;
+        }
+        
+        .editor-container {
+            flex: 1;
+            display: flex;
+        }
+        
+        .editor {
+            flex: 2;
+            background: #1e1e1e;
+        }
+        
+        .right-panel {
+            width: 350px;
+            background: #252526;
+            border-left: 1px solid #3e3e42;
+            overflow-y: auto;
+        }
+        
+        .file-tree {
+            padding: 10px;
+            -webkit-user-select: none; /* Safari */
+            user-select: none;
+        }
+        
+        .file-item {
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            margin: 1px 0;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+        }
+        
+        .file-item:hover {
+            background: #3e3e42;
+        }
+        
+        .file-item.active {
+            background: #007acc;
+            color: white;
+        }
+        
+        .file-item.directory {
+            font-weight: 500;
+        }
+        
+        .file-item.file {
+            padding-left: 20px;
+        }
+        
+        .file-icon {
+            margin-right: 6px;
+            width: 16px;
+            font-size: 14px;
+        }
+        
+        .expandable {
+            margin-right: 4px;
+            cursor: pointer;
+            width: 12px;
+            text-align: center;
+        }
+        
+        .expanded .expandable::before {
+            content: '▼';
+        }
+        
+        .collapsed .expandable::before {
+            content: '▶';
+        }
+        
+        .panel-section {
+            border-bottom: 1px solid #3e3e42;
+            margin-bottom: 10px;
+        }
+        
+        .panel-header {
+            background: #2d2d30;
+            padding: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .panel-content {
+            padding: 10px;
+        }
+        
+        .code-editor {
+            width: 100%;
+            height: 100%;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: none;
+            outline: none;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 20px;
+            resize: none;
+            tab-size: 4;
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: auto;
+        }
+        
+        .code-editor:focus {
+            background: #1f1f1f;
+        }
+        
+        .editor-header {
+            background: #2d2d30;
+            padding: 8px 16px;
+            font-size: 12px;
+            color: #cccccc;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-path {
+            font-family: monospace;
+        }
+        
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .editor-btn {
+            background: #3e3e42;
+            border: none;
+            color: #cccccc;
+            padding: 4px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        
+        .editor-btn:hover {
+            background: #4e4e52;
+        }
+        
+        .btn {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 3px;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #005a9e;
+        }
+        
+        .btn-secondary {
+            background: #3e3e42;
+        }
+        
+        .btn-secondary:hover {
+            background: #4e4e52;
+        }
+        
+        .output {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .input-group {
+            margin: 10px 0;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #cccccc;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 8px;
+            background: #3c3c3c;
+            border: 1px solid #3e3e42;
+            color: white;
+            border-radius: 3px;
+        }
+        
+        .account-item {
+            background: #3c3c3c;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            border: 1px solid #3e3e42;
+        }
+        
+        .account-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .account-key {
+            font-family: monospace;
+            font-size: 11px;
+            word-break: break-all;
+            color: #cccccc;
+        }
+        
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        .status.success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .status.error {
+            background: #f44336;
+            color: white;
+        }
+        
+        .status.info {
+            background: #2196f3;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="ide-container">
+        <div class="sidebar">
+            <div class="panel-section">
+                <div class="panel-header">File Explorer</div>
+                <div class="panel-content">
+                    <div class="file-tree" id="fileTree">
+                        <!-- File tree will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h2>Soroban IDE</h2>
+            </div>
+            
+            <div class="tabs" id="editorTabs">
+                <!-- Tabs will be populated by JavaScript -->
+            </div>
+            
+            <div class="editor-container">
+                <div class="editor">
+                    <div class="editor-header">
+                        <div class="file-path" id="currentFilePath">No file selected</div>
+                        <div class="editor-actions">
+                            <button class="editor-btn" onclick="saveCurrentFile()">Save</button>
+                            <button class="editor-btn" onclick="formatCode()">Format</button>
+                        </div>
+                    </div>
+                    <textarea class="code-editor" id="codeEditor" placeholder="// Select a file to start editing..."></textarea>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="panel-section">
+                        <div class="panel-header" onclick="togglePanel('accounts')">Accounts</div>
+                        <div class="panel-content" id="accounts">
+                            <button class="btn" onclick="createAccount()">Create Account</button>
+                            <div id="accountsList"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-section">
+                        <div class="panel-header" onclick="togglePanel('build')">Build & Deploy</div>
+                        <div class="panel-content" id="build">
+                            <div class="input-group">
+                                <label>Network:</label>
+                                <select id="networkSelect" title="Network">
+                                    <option value="futurenet">Futurenet (Testnet)</option>
+                                    <option value="testnet">Testnet</option>
+                                    <option value="mainnet">Mainnet</option>
+                                </select>
+                            </div>
+                            <button class="btn" onclick="compileContract()">Compile Contract</button>
+                            <button class="btn" onclick="deployContract()">Deploy Contract</button>
+                            <div class="output" id="buildOutput">Ready to compile...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-section">
+                        <div class="panel-header" onclick="togglePanel('run')">Contract Interaction</div>
+                        <div class="panel-content" id="run">
+                            <div class="input-group">
+                                <label>Contract ID:</label>
+                                <input type="text" id="contractId" placeholder="Enter contract ID">
+                                <button class="btn btn-secondary" onclick="loadContractInfo()">Load Info</button>
+                            </div>
+                            <div class="input-group">
+                                <label>Function:</label>
+                                <select id="functionName" title="Function">
+                                    <option value="hello">hello</option>
+                                    <option value="increment">increment</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Arguments (JSON):</label>
+                                <input type="text" id="functionArgs" placeholder='["world"]'>
+                            </div>
+                            <button class="btn" onclick="invokeFunction()">Invoke Function</button>
+                            <div class="output" id="runOutput">Function results will appear here...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-section">
+                        <div class="panel-header" onclick="togglePanel('deployments')">Deployment History</div>
+                        <div class="panel-content" id="deployments">
+                            <div id="deploymentsList">No deployments yet...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let accounts = [];
+        let compiledWasm = null;
+        let currentFile = null;
+        let openTabs = [];
+        let fileContents = {};
+        let deploymentHistory = [];
+        
+        // API base URL - dynamic detection for Replit environment
+        const getApiBase = () => {
+            const hostname = window.location.hostname;
+            if (hostname.includes('replit.dev')) {
+                // Replit environment - replace port in hostname
+                return window.location.protocol + '//' + hostname.replace(/-5000-/, '-8000-');
+            } else {
+                // Local development
+                return 'http://localhost:8000';
+            }
+        };
+        const API_BASE = getApiBase();
+        
+        // Simplified file structure - flat mapping for easier navigation
+        const fileDatabase = {
+            'hello_world/src/lib.rs': {
+                type: 'file',
+                content: `#![no_std]
+use soroban_sdk::{contract, contractimpl, contracttype, Env, Symbol, Val, symbol_short};
+
+const COUNTER_KEY: Symbol = symbol_short!("COUNTER");
+
+#[contracttype]
+pub enum DataKey {
+    Counter, // Using an enum for keys is a good practice
+}
+
+#[contract]
+pub struct IncrementContract;
+
+#[contractimpl]
+impl IncrementContract {
+    /// Initialize the contract, setting the counter to 0.
+    pub fn init(env: Env) {
+        env.storage().instance().set(&DataKey::Counter, &0u32);
+    }
+
+    /// Increment the counter by 1.
+    pub fn increment(env: Env) -> u32 {
+        let mut count: u32 = env.storage().instance().get(&DataKey::Counter).unwrap_or(0);
+        count += 1;
+        env.storage().instance().set(&DataKey::Counter, &count);
+        count
+    }
+
+    /// Get the current value of the counter.
+    pub fn get_count(env: Env) -> u32 {
+        env.storage().instance().get(&DataKey::Counter).unwrap_or(0)
+    }
+}`
+            },
+            'hello_world/src/test.rs': {
+                type: 'file',
+                content: `#![cfg(test)]
+
+use super::*;
+use soroban_sdk::{symbol, Env, testutils::Logs};
+
+#[test]
+fn test_hello() {
+    let env = Env::default();
+    let contract_id = env.register_contract(None, HelloContract);
+    
+    let result = HelloContract::hello(env.clone(), symbol!("Dev"));
+    assert_eq!(result, symbol!("Hello"));
+}
+
+#[test]
+fn test_increment() {
+    let env = Env::default();
+    let contract_id = env.register_contract(None, HelloContract);
+    
+    assert_eq!(HelloContract::increment(env.clone()), 1);
+    assert_eq!(HelloContract::increment(env.clone()), 2);
+    assert_eq!(HelloContract::increment(env.clone()), 3);
+}`
+            },
+            'hello_world/Cargo.toml': {
+                type: 'file',
+                content: `[package]
+name = "hello_world"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = "22.0.8"
+
+[dev_dependencies]
+soroban-sdk = { version = "22.0.8", features = ["testutils"] }
+
+[features]
+testutils = ["soroban-sdk/testutils"]`
+            }
+        };
+        
+        // File tree structure for display
+        const fileTree = [
+            {
+                name: 'hello_world',
+                type: 'directory',
+                expanded: true,
+                children: [
+                    {
+                        name: 'src',
+                        type: 'directory',
+                        expanded: true,
+                        children: [
+                            { name: 'lib.rs', type: 'file', path: 'hello_world/src/lib.rs' },
+                            { name: 'test.rs', type: 'file', path: 'hello_world/src/test.rs' }
+                        ]
+                    },
+                    { name: 'Cargo.toml', type: 'file', path: 'hello_world/Cargo.toml' }
+                ]
+            }
+        ];
+        
+        // File Manager Functions
+        function initializeFileTree() {
+            const treeContainer = document.getElementById('fileTree');
+            treeContainer.innerHTML = '';
+            renderFileTree(fileTree, treeContainer, 0);
+        }
+        
+        function renderFileTree(files, container, level) {
+            for (const item of files) {
+                const fileItem = document.createElement('div');
+                fileItem.className = `file-item ${item.type}`;
+                fileItem.style.paddingLeft = `${level * 16}px`;
+                
+                if (item.type === 'directory') {
+                    fileItem.innerHTML = `
+                        <span class="expandable ${item.expanded ? 'expanded' : 'collapsed'}" onclick="toggleDirectory('${item.name}')"></span>
+                        <span class="file-icon">📁</span>
+                        <span>${item.name}</span>
+                    `;
+                    container.appendChild(fileItem);
+                    
+                    if (item.expanded && item.children) {
+                        renderFileTree(item.children, container, level + 1);
+                    }
+                } else {
+                    const icon = getFileIcon(item.name);
+                    fileItem.innerHTML = `
+                        <span class="file-icon">${icon}</span>
+                        <span>${item.name}</span>
+                    `;
+                    fileItem.onclick = () => openFile(item.path);
+                    container.appendChild(fileItem);
+                }
+            }
+        }
+        
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            switch (ext) {
+                case 'rs': return '🦀';
+                case 'toml': return '⚙️';
+                case 'md': return '📝';
+                case 'json': return '📋';
+                default: return '📄';
+            }
+        }
+        
+        function toggleDirectory(dirName) {
+            // Find and toggle the directory in fileTree
+            function toggleInTree(items) {
+                for (const item of items) {
+                    if (item.name === dirName && item.type === 'directory') {
+                        item.expanded = !item.expanded;
+                        return true;
+                    }
+                    if (item.children && toggleInTree(item.children)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            toggleInTree(fileTree);
+            initializeFileTree();
+        }
+        
+        function openFile(filePath) {
+            try {
+                // Get file from the simplified database
+                const fileData = fileDatabase[filePath];
+                
+                if (!fileData) {
+                    addStatus(`File not found: ${filePath}`, 'error');
+                    return;
+                }
+                
+                if (fileData.type !== 'file') {
+                    addStatus(`Not a file: ${filePath}`, 'error');
+                    return;
+                }
+                
+                // Save current file content before switching
+                if (currentFile) {
+                    saveCurrentFileContent();
+                }
+                
+                // Open file in editor
+                currentFile = filePath;
+                document.getElementById('codeEditor').value = fileData.content || '';
+                document.getElementById('currentFilePath').textContent = filePath;
+                
+                // Add to tabs if not already open
+                if (!openTabs.includes(filePath)) {
+                    openTabs.push(filePath);
+                    updateTabs();
+                }
+                
+                // Update active tab
+                updateActiveTab(filePath);
+                
+                // Highlight in file tree
+                highlightActiveFile(filePath);
+                
+                addStatus(`Opened: ${filePath}`, 'success');
+            } catch (error) {
+                addStatus(`Error opening file: ${error.message}`, 'error');
+                console.error('Error opening file:', error, 'Path:', filePath);
+            }
+        }
+        
+        function saveCurrentFileContent() {
+            if (currentFile && fileDatabase[currentFile]) {
+                try {
+                    const content = document.getElementById('codeEditor').value;
+                    fileDatabase[currentFile].content = content;
+                } catch (error) {
+                    console.error('Error saving file content:', error);
+                }
+            }
+        }
+        
+        function saveCurrentFile() {
+            if (currentFile) {
+                saveCurrentFileContent();
+                addStatus(`Saved: ${currentFile}`, 'success');
+            } else {
+                addStatus('No file selected to save', 'error');
+            }
+        }
+        
+        function formatCode() {
+            if (currentFile && currentFile.endsWith('.rs')) {
+                const editor = document.getElementById('codeEditor');
+                let code = editor.value;
+                
+                // Basic Rust formatting
+                code = code.replace(/\s*{\s*/g, ' {\n    ');
+                code = code.replace(/;\s*/g, ';\n    ');
+                code = code.replace(/}\s*/g, '\n}\n');
+                code = code.replace(/\n\s*\n\s*\n/g, '\n\n');
+                
+                editor.value = code;
+                addStatus('Code formatted', 'success');
+            } else {
+                addStatus('Formatting not available for this file type', 'info');
+            }
+        }
+        
+        function updateTabs() {
+            const tabsContainer = document.getElementById('editorTabs');
+            tabsContainer.innerHTML = '';
+            
+            openTabs.forEach(filePath => {
+                const tab = document.createElement('div');
+                tab.className = 'tab';
+                tab.innerHTML = `
+                    <span onclick="switchToTab('${filePath}')">${filePath.split('/').pop()}</span>
+                    <span onclick="closeTab('${filePath}')" style="margin-left: 8px; cursor: pointer;">×</span>
+                `;
+                tabsContainer.appendChild(tab);
+            });
+        }
+        
+        function updateActiveTab(filePath) {
+            document.querySelectorAll('.tab').forEach((tab, index) => {
+                tab.classList.toggle('active', openTabs[index] === filePath);
+            });
+        }
+        
+        function switchToTab(filePath) {
+            openFile(filePath);
+        }
+        
+        function closeTab(filePath) {
+            const index = openTabs.indexOf(filePath);
+            if (index > -1) {
+                openTabs.splice(index, 1);
+                
+                if (currentFile === filePath) {
+                    if (openTabs.length > 0) {
+                        const newFile = openTabs[Math.max(0, index - 1)];
+                        openFile(newFile);
+                    } else {
+                        currentFile = null;
+                        document.getElementById('codeEditor').value = '';
+                        document.getElementById('currentFilePath').textContent = 'No file selected';
+                    }
+                }
+                
+                updateTabs();
+                if (currentFile) updateActiveTab(currentFile);
+            }
+        }
+        
+        function highlightActiveFile(filePath) {
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Find and highlight the active file
+            const fileItems = document.querySelectorAll('.file-item.file');
+            fileItems.forEach(item => {
+                const fileName = item.textContent.trim();
+                if (filePath.endsWith(fileName)) {
+                    item.classList.add('active');
+                }
+            });
+        }
+        
+        function togglePanel(panelId) {
+            const panel = document.getElementById(panelId);
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        async function createAccount() {
+            try {
+                // Generate keypair (simplified)
+                const keypair = await generateKeypair();
+                const account = {
+                    name: `Account ${accounts.length + 1}`,
+                    publicKey: keypair.public_key,
+                    secretKey: keypair.secret_key,
+                    balance: '0'
+                };
+                
+                accounts.push(account);
+                updateAccountsList();
+                addStatus('Account created successfully', 'success');
+                
+                // Try to fund account but don't fail if it doesn't work
+                try {
+                    await fundAccount(account.publicKey);
+                } catch (fundError) {
+                    addStatus('Account created but funding failed - this is normal in demo mode', 'info');
+                }
+                
+            } catch (error) {
+                addStatus(`Error creating account: ${error.message}`, 'error');
+            }
+        }
+        
+        async function generateKeypair() {
+            // Generate authentic Stellar keypair using backend
+            try {
+                const response = await fetch(`${API_BASE}/generate-keypair`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const keypair = await response.json();
+                    return keypair;
+                } else {
+                    throw new Error('Keypair generation failed');
+                }
+            } catch (error) {
+                addStatus('Keypair generation failed - using fallback method', 'error');
+                throw error;
+            }
+        }
+        
+        async function fundAccount(publicKey) {
+            const response = await fetch(`${API_BASE}/fund-account`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ public_key: publicKey, network: 'futurenet' })
+            });
+            
+            if (response.ok) {
+                addStatus('Account funded successfully', 'success');
+            } else {
+                throw new Error('Funding service unavailable');
+            }
+        }
+        
+        function updateAccountsList() {
+            const list = document.getElementById('accountsList');
+            list.innerHTML = accounts.map(account => `
+                <div class="account-item">
+                    <div class="account-name">${account.name}</div>
+                    <div class="account-key">${account.publicKey.substring(0, 20)}...</div>
+                    <button class="btn btn-secondary" onclick="selectAccount('${account.secretKey}')">Select</button>
+                </div>
+            `).join('');
+        }
+        
+        function selectAccount(secretKey) {
+            window.selectedAccount = secretKey;
+            addStatus('Account selected for transactions', 'info');
+        }
+        
+        async function compileContract() {
+            const code = document.getElementById('codeEditor').value;
+            const output = document.getElementById('buildOutput');
+            
+            output.innerHTML = 'Compiling contract...';
+            
+            try {
+                const files = {
+                    'hello_world/src/lib.rs': code,
+                    'hello_world/Cargo.toml': `[package]
+name = "hello_world"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = "22.0.8"
+
+[dev_dependencies]
+soroban-sdk = { version = "22.0.8", features = ["testutils"] }
+
+[features]
+testutils = ["soroban-sdk/testutils"]`
+                };
+                
+                const formData = new FormData();
+                const codeBlob = new Blob([code], { type: 'text/rust' });
+                formData.append('file', codeBlob, 'lib.rs');
+                // If 'optimize' or other parameters are needed by the actual compile logic later,
+                // they can be appended to formData as well. e.g.:
+                // formData.append('optimize', 'true');
+
+                const response = await fetch(`${API_BASE}/compile`, {
+                    method: 'POST',
+                    // For FormData, the browser automatically sets the Content-Type with the correct boundary.
+                    // Explicitly setting 'Content-Type': 'multipart/form-data' can sometimes cause issues.
+                    body: formData
+                }).catch(err => {
+                    throw new Error('Backend connection failed');
+                });
+                
+                const result = await response.json().catch(err => {
+                    throw new Error('Invalid response format');
+                });
+                
+                console.log('Compile response:', response.status, result);
+                
+                if (response.ok && result.wasm_base64) {
+                    compiledWasm = result.wasm_base64;
+                    const warnings = result.build_info?.warnings?.length ? 
+                        `\nWarnings: ${result.build_info.warnings.join(', ')}` : '';
+                    output.innerHTML = `✅ Compilation successful!
+WASM size: ${result.wasm_size} bytes
+Build time: ${result.build_info.duration_ms}ms${warnings}`;
+                    addStatus('Contract compiled successfully', 'success');
+                } else {
+                    // Show API-provided error (detail or error) or fallback message
+                    const errorMsg = result.error || result.detail || `HTTP ${response.status} (${response.statusText})`;
+                    output.innerHTML = `❌ Compilation failed: ${errorMsg}`;
+                    addStatus(`Compilation failed: ${errorMsg}`, 'error');
+                }
+            } catch (error) {
+                output.innerHTML = `❌ Error: ${error.message}`;
+                addStatus(`Compilation error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function deployContract() {
+            if (!compiledWasm) {
+                addStatus('Please compile the contract first', 'error');
+                return;
+            }
+            
+            if (!window.selectedAccount) {
+                addStatus('Please select an account first', 'error');
+                return;
+            }
+            
+            const network = document.getElementById('networkSelect').value;
+            const output = document.getElementById('buildOutput');
+            output.innerHTML = 'Deploying contract...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/deploy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wasm_base64: compiledWasm,
+                        secret_key: window.selectedAccount,
+                        network: network
+                    })
+                }).catch(err => {
+                    // This catch is for network errors with fetch itself
+                    addStatus(`Deploy fetch error: ${err.message}`, 'error');
+                    output.innerHTML = `❌ Deployment network error: ${err.message}`;
+                    throw err; // Re-throw to be caught by outer catch if needed, or just return
+                });
+                
+                let result;
+                try {
+                    result = await response.json();
+                } catch (jsonError) {
+                    addStatus(`Error parsing deploy JSON response: ${jsonError.message}`, 'error');
+                    output.innerHTML = `❌ Error parsing deploy response: ${jsonError.message}`;
+                    // Log the raw text if JSON parsing fails and it's not a general network error handled above
+                    if (response && typeof response.text === 'function') {
+                        response.text().then(text => console.error('Raw non-JSON deploy response:', text));
+                    }
+                    throw jsonError; // Re-throw to be caught by outer catch
+                }
+                
+                // Log details for debugging
+                console.log('Deploy response status:', response.status, 'ok:', response.ok);
+                console.log('Deploy response JSON (result):', JSON.stringify(result, null, 2));
+                console.log('Deploy result.contractId:', result ? result.contractId : 'result is undefined/null');
+
+                if (response.ok && result && result.contractId) {
+                    document.getElementById('contractId').value = result.contractId;
+                    
+                    const deployment = {
+                        contractId: result.contractId,
+                        transactionHash: result.transactionHash, // Will be null if not provided
+                        wasmHash: result.wasmHash,
+                        network: result.network, // Use network from result for consistency
+                        timestamp: new Date().toLocaleString(),
+                        accountPublicKey: getSelectedAccountPublicKey()
+                    };
+                    deploymentHistory.push(deployment);
+                    updateDeploymentsList();
+                    
+                    output.innerHTML = `✅ Deployment successful!\nContract ID: ${result.contractId}\nTransaction: ${result.transactionHash || 'N/A'}\nWASM Hash: ${result.wasmHash}\nNetwork: ${result.network}\nStatus: ${result.status || 'N/A'}\nMessage: ${result.message || ''}`;
+                    addStatus('Contract deployed successfully', 'success');
+                } else {
+                    // Refined error message extraction
+                    let errorMsg = 'Unknown deployment error';
+                    if (result) {
+                        errorMsg = result.detail || result.error || result.message || errorMsg;
+                    }
+                    if (!response.ok && !errorMsg.startsWith('HTTP')) {
+                         errorMsg = `HTTP ${response.status}: ${errorMsg}`;
+                    }
+                    output.innerHTML = `❌ Deployment failed: ${errorMsg}`;
+                    addStatus(`Deployment failed: ${errorMsg}`, 'error');
+                }
+            } catch (error) {
+                // This outer catch handles errors from fetch, response.json(), or logic errors above
+                const displayError = error && error.message ? error.message : 'An unexpected client-side error occurred.';
+                output.innerHTML = `❌ Deployment error: ${displayError}`;
+                addStatus(`Deployment error: ${displayError}`, 'error');
+                console.error('Full deployment error object:', error);
+            }
+        }
+        
+        function getSelectedAccountPublicKey() {
+            if (!window.selectedAccount) return 'Unknown';
+            const account = accounts.find(acc => acc.secretKey === window.selectedAccount);
+            return account ? account.publicKey : 'Unknown';
+        }
+        
+        function updateDeploymentsList() {
+            const list = document.getElementById('deploymentsList');
+            if (deploymentHistory.length === 0) {
+                list.innerHTML = 'No deployments yet...';
+                return;
+            }
+            
+            list.innerHTML = deploymentHistory.map(deployment => `
+                <div class="deployment-item" style="border: 1px solid #3e3e42; margin: 5px 0; padding: 8px; border-radius: 3px;">
+                    <div><strong>Contract ID:</strong> ${deployment.contractId}</div>
+                    <div><strong>Network:</strong> ${deployment.network}</div>
+                    <div><strong>Deployed:</strong> ${deployment.timestamp}</div>
+                    <button class="btn btn-secondary" onclick="loadDeployment('${deployment.contractId}')">Load</button>
+                </div>
+            `).join('');
+        }
+        
+        function loadDeployment(contractId) {
+            document.getElementById('contractId').value = contractId;
+            addStatus(`Loaded contract ${contractId}`, 'info');
+        }
+        
+        async function loadContractInfo() {
+            const contractId = document.getElementById('contractId').value;
+            if (!contractId) {
+                addStatus('Please enter a contract ID', 'error');
+                return;
+            }
+            
+            const network = document.getElementById('networkSelect').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/contract-info/${contractId}?network=${network}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    addStatus('Contract info loaded successfully', 'success');
+                    // Could update function dropdown here if we had contract spec
+                } else {
+                    addStatus('Contract info not available (demo mode)', 'info');
+                }
+            } catch (error) {
+                addStatus('Contract info not available (demo mode)', 'info');
+            }
+        }
+        
+        async function invokeFunction() {
+            const contractId = document.getElementById('contractId').value;
+            const functionName = document.getElementById('functionName').value;
+            const argsText = document.getElementById('functionArgs').value;
+            const output = document.getElementById('runOutput');
+            
+            if (!contractId) {
+                addStatus('Please enter a contract ID', 'error');
+                return;
+            }
+            
+            if (!window.selectedAccount) {
+                addStatus('Please select an account first', 'error');
+                return;
+            }
+            
+            const network = document.getElementById('networkSelect').value;
+            output.innerHTML = 'Invoking function...';
+            
+            try {
+                let args = [];
+                if (argsText.trim()) {
+                    try {
+                        args = JSON.parse(argsText);
+                    } catch (parseError) {
+                        throw new Error('Invalid JSON format in arguments');
+                    }
+                }
+                
+                const response = await fetch(`${API_BASE}/invoke`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contract_id: contractId,
+                        function_name: functionName,
+                        args: args,
+                        secret_key: window.selectedAccount,
+                        network: network
+                    })
+                }).catch(err => {
+                    throw new Error('Backend connection failed');
+                });
+                
+                const result = await response.json().catch(err => {
+                    throw new Error('Invalid response format');
+                });
+                
+                if (response.ok && result.result !== undefined) {
+                    const logs = result.logs?.length ? `\nLogs: ${result.logs.join(', ')}` : '';
+                    output.innerHTML = `✅ Function executed successfully!
+Result: ${JSON.stringify(result.result)}
+Transaction: ${result.transactionHash}
+Cost: ${result.cost}${logs}`;
+                    addStatus('Function invoked successfully', 'success');
+                } else {
+                    const errorMsg = result.error || 'Unknown invocation error';
+                    output.innerHTML = `❌ Invocation failed: ${errorMsg}`;
+                    addStatus('Function invocation failed', 'error');
+                }
+            } catch (error) {
+                output.innerHTML = `❌ Error: ${error.message}`;
+                addStatus(`Invocation error: ${error.message}`, 'error');
+            }
+        }
+        
+        function addStatus(message, type) {
+            const status = document.createElement('div');
+            status.className = `status ${type}`;
+            status.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            
+            // Add to build output temporarily
+            const buildOutput = document.getElementById('buildOutput');
+            buildOutput.appendChild(status);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                if (status.parentNode) {
+                    status.parentNode.removeChild(status);
+                }
+            }, 5000);
+        }
+        
+        // Initialize IDE
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize file manager
+            initializeFileTree();
+            
+            // Set default content in editor from fileDatabase
+            const defaultPath = 'hello_world/src/lib.rs';
+            const defaultFile = fileDatabase[defaultPath];
+            
+            if (defaultFile) {
+                document.getElementById('codeEditor').value = defaultFile.content;
+                document.getElementById('currentFilePath').textContent = defaultPath;
+                currentFile = defaultPath;
+                openTabs.push(currentFile);
+                updateTabs();
+                updateActiveTab(currentFile);
+                addStatus('Default file loaded', 'success');
+            } else {
+                addStatus('Error loading default file', 'error');
+            }
+            
+            addStatus('Soroban IDE loaded successfully', 'info');
+            addStatus(`API Base: ${API_BASE}`, 'info');
+            
+            // Test backend connection
+            fetch(`${API_BASE}/health`)
+                .then(response => response.json())
+                .then(data => {
+                    addStatus('Backend connection successful', 'success');
+                })
+                .catch(error => {
+                    addStatus(`Backend connection failed: ${error.message}`, 'error');
+                });
+        });
+        
+        // Auto-save functionality - will be set up after DOM is ready
+        setTimeout(() => {
+            const editor = document.getElementById('codeEditor');
+            if (editor) {
+                editor.addEventListener('input', function() {
+                    if (currentFile) {
+                        // Debounced auto-save
+                        clearTimeout(window.autoSaveTimeout);
+                        window.autoSaveTimeout = setTimeout(() => {
+                            saveCurrentFileContent();
+                        }, 2000);
+                    }
+                });
+            }
+        }, 100);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 's':
+                        e.preventDefault();
+                        saveCurrentFile();
+                        break;
+                    case 'w':
+                        e.preventDefault();
+                        if (currentFile) {
+                            closeTab(currentFile);
+                        }
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

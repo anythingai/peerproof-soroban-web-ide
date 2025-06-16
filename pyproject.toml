@@ -1,0 +1,37 @@
+[project]
+name = "soroban-ide-backend"
+version = "0.1.0"
+description = "Backend services for the Soroban IDE"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.100.0,<0.111.0",
+    "uvicorn[standard]>=0.23.0,<0.24.0",
+    "pydantic>=2.0.0,<3.0.0",
+    "python-multipart>=0.0.6,<0.0.7",
+    "aiohttp>=3.8.0,<3.10.0",
+    "watchdog>=3.0.0,<4.0.0",
+    "stellar-sdk>=9.0.0,<10.0.0",
+    "httpx>=0.25.0,<0.28.0"
+]
+
+[tool.poetry] # Assuming poetry is used, or this section can be adapted/removed
+name = "soroban-ide-backend"
+version = "0.1.0"
+description = "Backend services for the Soroban IDE"
+authors = ["Your Name <you@example.com>"] # Placeholder
+readme = "README.md" # Assuming a README at the root or services/compiler level
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+fastapi = ">=0.100.0,<0.111.0"
+uvicorn = {extras = ["standard"], version = ">=0.23.0,<0.24.0"}
+pydantic = ">=2.0.0,<3.0.0"
+python-multipart = ">=0.0.6,<0.0.7"
+aiohttp = ">=3.8.0,<3.10.0"
+watchdog = ">=3.0.0,<4.0.0"
+stellar-sdk = ">=9.0.0,<10.0.0"
+httpx = ">=0.25.0,<0.28.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

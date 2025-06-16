@@ -1,0 +1,65 @@
+FROM rust:1.75-slim as rust-builder
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Soroban CLI
+RUN cargo install --locked soroban-cli
+
+# Install wasm-opt for optimization
+RUN curl -L https://github.com/WebAssembly/binaryen/releases/download/version_116/binaryen-version_116-x86_64-linux.tar.gz \
+    | tar -xz -C /usr/local --strip-components=1
+
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Rust toolchain and Soroban CLI from builder
+COPY --from=rust-builder /usr/local/cargo/bin/soroban /usr/local/bin/
+COPY --from=rust-builder /usr/local/bin/wasm-opt /usr/local/bin/
+COPY --from=rust-builder /usr/local/cargo /usr/local/cargo
+COPY --from=rust-builder /usr/local/rustup /usr/local/rustup
+
+# Set up Rust environment
+ENV PATH="/usr/local/cargo/bin:${PATH}"
+ENV RUSTUP_HOME="/usr/local/rustup"
+ENV CARGO_HOME="/usr/local/cargo"
+
+# Add wasm32 target
+RUN rustup target add wasm32-unknown-unknown
+
+# Set working directory
+WORKDIR /app
+
+# Copy Python requirements
+COPY services/compiler/requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY services/compiler/ .
+
+# Create non-root user
+RUN useradd -m -u 1000 soroban && chown -R soroban:soroban /app
+USER soroban
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Start the application
+CMD ["python", "main.py"]

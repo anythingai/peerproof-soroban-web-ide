@@ -1,0 +1,30 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "A browser-based integrated development environment for writing, compiling, deploying, and testing Soroban (Stellar/XLM) smart contracts. Built with React, FastAPI, and Docker for a seamless development experience.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@stellar/stellar-sdk": "^13.3.0",
+    "@tailwindcss/postcss": "^4.1.8",
+    "@types/react": "^19.1.7",
+    "@types/react-dom": "^19.1.6",
+    "@usesoroban/sdk": "^0.2.5",
+    "@vitejs/plugin-react": "^4.5.2",
+    "autoprefixer": "^10.4.21",
+    "axios": "^1.9.0",
+    "lucide-react": "^0.513.0",
+    "postcss": "^8.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}
