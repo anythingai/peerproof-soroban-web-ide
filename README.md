@@ -1,4 +1,4 @@
-# Soroban IDE
+# PeerProof Soroban Web IDE
 
 A browser-based integrated development environment for writing, compiling, deploying, and testing Soroban (Stellar/XLM) smart contracts. Built with React, FastAPI, and Docker for a seamless development experience.
 
